@@ -34,13 +34,26 @@ class EstatePropertyOffer(models.Model):
 
     def _inverse_date_deadline(self):
         for record in self:
-            # Check if create_date exists
             if record.create_date:
-                # Convert create_date to date
                 create_date = record.create_date.date()
-                # Calculate validity based on create_date
                 record.validity = (record.date_deadline - create_date).days
             else:
-                # Fallback: assume today as create_date
                 create_date = fields.Date.today()
                 record.validity = (record.date_deadline - create_date).days
+
+    def action_accept_offer(self):
+        for offer in self:
+            offer.status = "accepted"
+            offer.property_id.partner_id = offer.partner_id
+            offer.property_id.selling_price = offer.price
+
+            other_offers = self.search([('property_id', '=', offer.property_id.id), ('id', '!=', offer.id)])
+            other_offers.write({"status":"refused"})
+        return True
+
+    def action_refuse_offer(self):
+        for offer in self:
+            offer.status = "refused"
+            offer.property_id.partner_id = None
+            offer.property_id.selling_price = None
+        return True

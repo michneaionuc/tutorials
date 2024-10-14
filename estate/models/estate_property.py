@@ -1,4 +1,5 @@
 from odoo import models, fields, api
+from odoo.exceptions import UserError
 from datetime import datetime, timedelta
 
 
@@ -42,7 +43,7 @@ class Property(models.Model):
     )
     total_area = fields.Float(compute="_compute_total_area",
                               string="Total Area (sqm)")
-    state = fields.Selection(
+    status = fields.Selection(
         [
             ('new', 'New'),
             ('offer_received', 'Offer Received'),
@@ -50,7 +51,7 @@ class Property(models.Model):
             ('sold', 'Sold'),
             ('canceled', 'Canceled')
         ],
-        string="State",
+        string="Status",
         required=True,
         copy=False,
         default='new'
@@ -86,3 +87,17 @@ class Property(models.Model):
         else:
             self.garden_area = None
             self.garden_orientation = None
+
+    def action_set_sold(self):
+        for record in self:
+            if record.status == 'canceled':
+                raise UserError("Canceled properties cannot be sold.")
+            record.status = "sold"
+        return True
+
+    def action_set_cancel(self):
+        for record in self:
+            if record.status == 'sold':
+                raise UserError("Sold properties cannot be canceled.")
+            record.status = "canceled"
+        return True
