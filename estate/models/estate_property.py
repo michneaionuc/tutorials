@@ -1,4 +1,4 @@
-from odoo import models, fields
+from odoo import models, fields, api
 from datetime import datetime, timedelta
 
 
@@ -20,6 +20,8 @@ class Property(models.Model):
         copy=False
     )
     expected_price = fields.Float(string="Expected Price", required=True)
+    best_price = fields.Float(string="Best Offer",
+                              compute="_compute_best_price")
     selling_price = fields.Float(string="Selling Price",
                                  readonly=True,
                                  copy=False)
@@ -38,6 +40,8 @@ class Property(models.Model):
         ],
         string="Garden Orientation"
     )
+    total_area = fields.Float(compute="_compute_total_area",
+                              string="Total Area (sqm)")
     state = fields.Selection(
         [
             ('new', 'New'),
@@ -58,3 +62,27 @@ class Property(models.Model):
     user_id = fields.Many2one('res.users', string="Salesman",
                               default=lambda self: self.env.user)
     partner_id = fields.Many2one('res.partner', string="Buyer", copy=False)
+
+    @api.depends("living_area", "garden_area")
+    def _compute_total_area(self):
+        for record in self:
+            record.total_area = record.living_area + record.garden_area
+
+    @api.depends("offer_ids.price")
+    def _compute_best_price(self):
+        for record in self:
+            if record.offer_ids:
+                best_price = 0
+                for offer_record in record.offer_ids:
+                    if offer_record.price > best_price:
+                        best_price = offer_record.price
+                record.best_price = best_price
+
+    @api.onchange("garden")
+    def _onchange_garden(self):
+        if self.garden:
+            self.garden_area = 10
+            self.garden_orientation = "north"
+        else:
+            self.garden_area = None
+            self.garden_orientation = None
