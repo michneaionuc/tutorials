@@ -15,6 +15,18 @@
         </field>
     </record>
 
+    <record id="estate_property_offers_view_tree" model="ir.ui.view">
+        <field name="name">estate.property.offer.tree</field>
+        <field name="model">estate.property.offer</field>
+        <field name="arch" type="xml">
+            <list string="Offers">
+                <field name="price"/>
+                <field name="partner_id"/>
+                <field name="status"/>
+            </list>
+        </field>
+    </record>
+
     <record id="estate_property_view_form" model="ir.ui.view">
         <field name="name">estate.property.form</field>
         <field name="model">estate.property</field>
@@ -27,11 +39,15 @@
                                 <h2 class="o_input" name="name">
                                     <field name="name" placeholder="House Name"/>
                                 </h2>
+                                <group>
+                                    <field name="tag_ids" widget="many2many_tags"/>
+                                </group>
                             </div>
                             <group>
                                 <div class="row">
                                     <div class="col-6">
                                         <group>
+                                            <field name="type_id"/>
                                             <field name="postcode"/>
                                             <field name="date_availability"/>
                                         </group>
@@ -59,6 +75,15 @@
                                 <field name="garden_area"/>
                                 <field name="garden_orientation"/>
                                 <field name="state"/>
+                            </group>
+                        </page>
+                        <page string="Offers">
+                            <field name="offer_ids"/>
+                        </page>
+                        <page string="Other Info">
+                            <group>
+                                <field name="user_id"/>
+                                <field name="partner_id"/>
                             </group>
                         </page>
                     </notebook>
