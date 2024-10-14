@@ -1,5 +1,6 @@
 from odoo import models, fields, api
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
+from odoo.tools.float_utils import float_compare, float_is_zero
 from datetime import datetime, timedelta
 
 
@@ -64,6 +65,14 @@ class Property(models.Model):
                               default=lambda self: self.env.user)
     partner_id = fields.Many2one('res.partner', string="Buyer", copy=False)
 
+    _sql_constraints = [
+        ('check_expected_price', 'CHECK(expected_price > 0)',
+         'A property expected price must be strictly positive'),
+        ('check_selling_price', 'CHECK(selling_price >= 0)',
+         'A property selling price must be positive')
+    ]
+
+
     @api.depends("living_area", "garden_area")
     def _compute_total_area(self):
         for record in self:
@@ -87,6 +96,14 @@ class Property(models.Model):
         else:
             self.garden_area = None
             self.garden_orientation = None
+
+    @api.constrains('selling_price', 'expected_price')
+    def _check_selling_price(self):
+        for property in self:
+            min_price = 0.9 * property.expected_price
+            if (float_compare(property.selling_price, min_price, precision_rounding=0.01) < 0 and 
+                    not float_is_zero(property.selling_price, precision_rounding=0.01)):
+                raise ValidationError("The selling price cannot be lower than 90% of the expected price.")
 
     def action_set_sold(self):
         for record in self:
