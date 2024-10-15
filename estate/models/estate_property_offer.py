@@ -6,6 +6,7 @@ from datetime import timedelta
 class EstatePropertyOffer(models.Model):
     _name = "estate.property.offer"
     _description = "An offer containing the price, partner and the status"
+    _order = "price desc"
 
     price = fields.Float(string="Price")
     partner_id = fields.Many2one("res.partner",
@@ -65,13 +66,15 @@ class EstatePropertyOffer(models.Model):
 
     def action_accept_offer(self):
         for offer in self:
+            other_offers = self.search([('property_id', '=', offer.property_id.id), ('id', '!=', offer.id), ('status', '=', 'accepted')])
+            if other_offers:
+                raise ValidationError("There is already an accepted offer for this property.")
             offer.status = "accepted"
             offer.property_id.partner_id = offer.partner_id
             offer.property_id.selling_price = offer.price
+            offer.property_id.status = 'offer_accepted'
 
-            other_offers = self.search([('property_id', '=', offer.property_id.id), ('id', '!=', offer.id)])
-            other_offers.write({"status":"refused"})
-        return True
+            return True
 
     def action_refuse_offer(self):
         for offer in self:

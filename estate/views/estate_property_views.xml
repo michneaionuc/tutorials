@@ -22,8 +22,8 @@
             <list string="Offers">
                 <field name="price"/>
                 <field name="partner_id"/>
-                <button name="action_accept_offer" string="Accept" type="object" icon="fa-check"/>
-                <button name="action_refuse_offer" string="Refuse" type="object" icon="fa-times"/>
+                <button name="action_accept_offer" string="Accept" type="object" icon="fa-check" invisible="status in ['accepted', 'refused']"/>
+                <button name="action_refuse_offer" string="Refuse" type="object" icon="fa-times" invisible="status in ['accepted', 'refused']"/>
                 <field name="status"/>
             </list>
         </field>
@@ -36,9 +36,10 @@
             <form string="Property">
                 <header>
                     <button name="action_set_sold" type="object" 
-                    string="Sold" class="oe_highlight"/>
+                    string="Sold" class="oe_highlight" invisible="status in ['sold', 'canceled']"/>
                     <button name="action_set_cancel" type="object" 
-                    string="Cancel" class="oe_highlight"/>
+                    string="Cancel" class="btn-secondary" invisible="status in ['sold', 'canceled']"/>
+                    <field name="status" widget="statusbar" statusbar_visible="new,offer_received,offer_accepted,sold"/>
                 </header>
                 <sheet>
                     <group>
@@ -48,15 +49,14 @@
                                     <field name="name" placeholder="House Name"/>
                                 </h2>
                                 <group>
-                                    <field name="tag_ids" widget="many2many_tags"/>
+                                    <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
                                 </group>
                             </div>
                             <group>
                                 <div class="row">
                                     <div class="col-6">
                                         <group>
-                                            <field name="status"/>
-                                            <field name="type_id"/>
+                                            <field name="type_id" options="{'no_create': True, 'no_open': True}"/>
                                             <field name="postcode"/>
                                             <field name="date_availability"/>
                                         </group>
@@ -82,8 +82,8 @@
                                 <field name="facades"/>
                                 <field name="garage"/>
                                 <field name="garden"/>
-                                <field name="garden_area"/>
-                                <field name="garden_orientation"/>
+                                <field name="garden_area" invisible="not garden"/>
+                                <field name="garden_orientation"  invisible="not garden"/>
                                 <field name="total_area"/>
                             </group>
                         </page>
