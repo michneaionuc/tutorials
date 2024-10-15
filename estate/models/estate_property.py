@@ -23,7 +23,8 @@ class Property(models.Model):
     )
     expected_price = fields.Float(string="Expected Price", required=True)
     best_price = fields.Float(string="Best Offer",
-                              compute="_compute_best_price")
+                              compute="_compute_best_price",
+                              default=None)
     selling_price = fields.Float(string="Selling Price",
                                  readonly=True,
                                  copy=False)
@@ -81,12 +82,14 @@ class Property(models.Model):
     @api.depends("offer_ids.price")
     def _compute_best_price(self):
         for record in self:
-            if record.offer_ids:
+            if record.id and record.offer_ids:
                 best_price = 0
                 for offer_record in record.offer_ids:
                     if offer_record.price > best_price:
                         best_price = offer_record.price
                 record.best_price = best_price
+            else:
+                record.best_price = 0
 
     @api.onchange("garden")
     def _onchange_garden(self):
@@ -104,6 +107,18 @@ class Property(models.Model):
             if (float_compare(property.selling_price, min_price, precision_rounding=0.01) < 0 and 
                     not float_is_zero(property.selling_price, precision_rounding=0.01)):
                 raise ValidationError("The selling price cannot be lower than 90% of the expected price.")
+            
+    @api.model
+    def ondelete(self):
+        for property in self:
+            if property.status not in ['new', 'canceled']:
+                raise ValidationError(
+                    "You cannot delete a property that is not in 'New' or 'Canceled' state."
+                )
+
+    def unlink(self):
+        self.ondelete()
+        return super(Property, self).unlink()
 
     def action_set_sold(self):
         for record in self:

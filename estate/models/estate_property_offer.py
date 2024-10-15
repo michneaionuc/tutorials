@@ -1,4 +1,5 @@
 from odoo import models, fields, api
+from odoo.exceptions import ValidationError
 from datetime import timedelta
 
 
@@ -36,6 +37,22 @@ class EstatePropertyOffer(models.Model):
         for record in self:
             create_date = record.create_date.date() if record.create_date else fields.Date.today()
             record.date_deadline = create_date + timedelta(days=record.validity)
+
+    @api.model_create_multi 
+    def create(self, vals_list):
+        for vals in vals_list:
+            property_id = vals.get('property_id')
+            offer_price = vals.get('price')
+            if property_id:
+                property_record = self.env['estate.property'].browse(property_id)
+                existing_offers = self.search([('property_id', '=', property_id)])
+                if existing_offers:
+                    highest_offer = max(existing_offers.mapped('price'))
+                    if offer_price <= highest_offer:
+                        raise ValidationError(f"An existing offer of {highest_offer} is higher than or equal to the new offer price {offer_price}.")
+                property_record.status = 'offer_received'
+
+        return super(EstatePropertyOffer, self).create(vals_list)
 
     def _inverse_date_deadline(self):
         for record in self:
